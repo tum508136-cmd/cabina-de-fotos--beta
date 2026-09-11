@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cabina de Fotos Y2K</title>
+<link rel="stylesheet" href="sytles.css">
+</head>
+<body>
+
+  <div class="marquee-bar">
+    <span>✰ CABINA DE FOTOS ✰ SONRÍE ✰ DECÓRALA ✰ DESCÁRGALA ✰ COMPÁRTELA CON TUS AMIG@S ✰</span>
+  </div>
+
+  <div class="hero">
+    <h1>Cabina de Fotos</h1>
+    <div class="sub"><span class="star">✦</span> hecha con puro glitter noventero <span class="star">✦</span></div>
+  </div>
+
+  <div class="layout">
+    <!-- Camera -->
+    <div class="cam-card">
+      <div class="cam-screen" id="camScreen">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="cam-placeholder hidden" id="placeholder">
+          Necesito permiso para usar tu cámara 📷<br>
+          Si el navegador no lo pide, revisa el ícono de cámara en la barra de direcciones.
+          <br>
+          <button class="bubble-btn big-btn" style="width:auto; padding:10px 24px; font-size:12px; margin-top:14px;" id="retryBtn">Reintentar</button>
+        </div>
+        <div class="flash-overlay" id="flash"></div>
+        <div class="countdown" id="countdown"></div>
+        <div class="shot-badge hidden" id="shotBadge"></div>
+      </div>
+      <div class="cam-controls">
+        <div class="lens-dot"></div><div class="lens-dot"></div><div class="lens-dot"></div>
+      </div>
+    </div>
+
+    <!-- Controls / preview -->
+    <div class="panel">
+
+      <!-- Step 1: setup + capture -->
+      <div class="box" id="setupBox">
+        <h2>✦ Largo de la tira ✦</h2>
+        <div class="length-toggle">
+          <button data-count="4" class="bubble-btn active">4 fotos</button>
+          <button data-count="6" class="bubble-btn">6 fotos</button>
+        </div>
+        <button class="bubble-btn big-btn" id="startBtn">Iniciar sesión</button>
+        <button class="bubble-btn big-btn secondary hidden" id="resetBtn">Tomar otra tira</button>
+        <div class="status-line" id="statusLine">Lista para empezar</div>
+      </div>
+
+      <!-- Live thumbnails while capturing -->
+      <div class="box" id="thumbsBox">
+        <h2>✦ Tira en progreso ✦</h2>
+        <div class="strip-wrap">
+          <div class="strip-thumbs" id="stripThumbs"></div>
+          <div class="strip-caption">Cabina de Fotos &middot; <span id="dateLabel"></span></div>
+        </div>
+      </div>
+
+      <!-- Step 2: sticker editor -->
+      <div class="box hidden" id="editorBox">
+        <h2>✦ Decora tu foto ✦</h2>
+        <div class="editor-photo" id="editorPhoto">
+          <img id="editorImg" alt="Foto a editar">
+        </div>
+        <div class="sticker-palette" id="stickerPalette">
+          <button data-emoji="⭐">⭐</button>
+          <button data-emoji="💖">💖</button>
+          <button data-emoji="✨">✨</button>
+          <button data-emoji="😎">😎</button>
+          <button data-emoji="🌸">🌸</button>
+          <button data-emoji="👑">👑</button>
+          <button data-emoji="🎀">🎀</button>
+          <button data-emoji="💫">💫</button>
+          <button data-emoji="🔥">🔥</button>
+          <button data-emoji="💿">💿</button>
+        </div>
+        <div class="sticker-tools" id="stickerTools">
+          <button id="stickerSmaller" title="Achicar">－</button>
+          <button id="stickerBigger" title="Agrandar">＋</button>
+          <button id="stickerRotate" title="Rotar">⟳</button>
+          <button id="stickerDelete" class="danger" title="Quitar">🗑</button>
+        </div>
+        <div class="editor-nav">
+          <button class="bubble-btn" id="prevPhotoBtn">‹ Anterior</button>
+          <div class="dots" id="editorDots"></div>
+          <button class="bubble-btn" id="nextPhotoBtn">Siguiente ›</button>
+        </div>
+        <button class="bubble-btn big-btn purple" id="finishEditBtn" style="margin-top:16px;">Crear tira final ✔</button>
+      </div>
+
+      <!-- Step 3: final -->
+      <div class="box hidden" id="finalBox">
+        <h2>✦ Tu tira terminada ✦</h2>
+        <div class="final-strip-wrap">
+          <img id="finalImg" alt="Tira de fotos final">
+          <button class="bubble-btn big-btn" id="downloadBtn" style="width:auto; padding:12px 28px;">Descargar PNG</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>Tus fotos se procesan en tu propio navegador. Nada se sube a ningún servidor. ✦</footer>
+
+<script>
+(function(){
+  const video = document.getElementById('video');
+  const placeholder = document.getElementById('placeholder');
+  const retryBtn = document.getElementById('retryBtn');
+  const flash = document.getElementById('flash');
+  const countdownEl = document.getElementById('countdown');
+  const shotBadge = document.getElementById('shotBadge');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const statusLine = document.getElementById('statusLine');
+  const stripThumbs = document.getElementById('stripThumbs');
+  const thumbsBox = document.getElementById('thumbsBox');
+  const setupBox = document.getElementById('setupBox');
+  const editorBox = document.getElementById('editorBox');
+  const editorPhoto = document.getElementById('editorPhoto');
+  const editorImg = document.getElementById('editorImg');
+  const stickerPalette = document.getElementById('stickerPalette');
+  const stickerTools = document.getElementById('stickerTools');
+  const prevPhotoBtn = document.getElementById('prevPhotoBtn');
+  const nextPhotoBtn = document.getElementById('nextPhotoBtn');
+  const editorDots = document.getElementById('editorDots');
+  const finishEditBtn = document.getElementById('finishEditBtn');
+  const finalBox = document.getElementById('finalBox');
+  const finalImg = document.getElementById('finalImg');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const dateLabel = document.getElementById('dateLabel');
+  const lengthButtons = document.querySelectorAll('.length-toggle button');
+
+  let stream = null;
+  let shotCount = 4;
+  let photos = [];          // dataURLs de las fotos crudas
+  let photoStickers = [];   // array por foto: [{id, emoji, x, y, scale, rot}]
+  let currentEditIndex = 0;
+  let stickerIdSeq = 0;
+  let selectedStickerId = null;
+  let capturing = false;
+
+  const CAPTURE_W = 480;
+  const CAPTURE_H = 360;
+
+  dateLabel.textContent = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' });
+
+  lengthButtons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(capturing) return;
+      lengthButtons.forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      shotCount = parseInt(btn.dataset.count, 10);
+      resetSession();
+    });
+  });
+
+  async function startCamera(){
+    placeholder.classList.add('hidden');
+    video.classList.remove('hidden');
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio:false });
+      video.srcObject = stream;
+      startBtn.disabled = false;
+      statusLine.textContent = 'Lista para empezar';
+    }catch(err){
+      video.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+      startBtn.disabled = true;
+      statusLine.textContent = 'Sin acceso a la cámara';
+    }
+  }
+  retryBtn.addEventListener('click', startCamera);
+  startCamera();
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+  function renderThumbs(){
+    stripThumbs.innerHTML = '';
+    for(let i=0;i<shotCount;i++){
+      if(photos[i]){
+        const img = document.createElement('img');
+        img.src = photos[i];
+        stripThumbs.appendChild(img);
+      }else{
+        const empty = document.createElement('div');
+        empty.className = 'empty-thumb';
+        stripThumbs.appendChild(empty);
+      }
+    }
+  }
+  renderThumbs();
+
+  async function runCountdown(n){
+    for(let i=n; i>=1; i--){
+      countdownEl.textContent = i;
+      countdownEl.classList.remove('show');
+      void countdownEl.offsetWidth;
+      countdownEl.classList.add('show');
+      await sleep(850);
+    }
+  }
+
+  function captureFrame(){
+    const canvas = document.createElement('canvas');
+    canvas.width = CAPTURE_W;
+    canvas.height = CAPTURE_H;
+    const ctx = canvas.getContext('2d');
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const targetRatio = CAPTURE_W / CAPTURE_H;
+    const srcRatio = vw / vh;
+    let sx, sy, sw, sh;
+    if(srcRatio > targetRatio){ sh = vh; sw = vh * targetRatio; sx = (vw - sw)/2; sy = 0; }
+    else { sw = vw; sh = vw / targetRatio; sx = 0; sy = (vh - sh)/2; }
+    ctx.translate(CAPTURE_W, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, CAPTURE_W, CAPTURE_H);
+    return canvas.toDataURL('image/jpeg', 0.92);
+  }
+
+  function doFlash(){
+    flash.classList.remove('on');
+    void flash.offsetWidth;
+    flash.classList.add('on');
+  }
+
+  async function startSession(){
+    if(capturing || !stream) return;
+    capturing = true;
+    photos = [];
+    photoStickers = [];
+    renderThumbs();
+    editorBox.classList.add('hidden');
+    finalBox.classList.add('hidden');
+    resetBtn.classList.add('hidden');
+    startBtn.disabled = true;
+    document.querySelectorAll('.length-toggle button').forEach(b=>b.disabled = true);
+
+    for(let i=0;i<shotCount;i++){
+      shotBadge.classList.remove('hidden');
+      shotBadge.textContent = 'FOTO ' + (i+1) + ' / ' + shotCount;
+      statusLine.textContent = 'Preparando foto ' + (i+1) + ' de ' + shotCount;
+      await runCountdown(3);
+      doFlash();
+      const dataUrl = captureFrame();
+      photos.push(dataUrl);
+      photoStickers.push([]);
+      renderThumbs();
+      statusLine.textContent = '¡Foto ' + (i+1) + ' lista!';
+      await sleep(500);
+    }
+
+    shotBadge.classList.add('hidden');
+    countdownEl.classList.remove('show');
+    startBtn.disabled = false;
+    document.querySelectorAll('.length-toggle button').forEach(b=>b.disabled = false);
+    capturing = false;
+
+    openEditor();
+  }
+
+  /* ===== Sticker editor ===== */
+
+  function openEditor(){
+    setupBox.classList.add('hidden');
+    thumbsBox.classList.add('hidden');
+    editorBox.classList.remove('hidden');
+    currentEditIndex = 0;
+    renderEditorPhoto();
+  }
+
+  function renderEditorDots(){
+    editorDots.innerHTML = '';
+    for(let i=0;i<shotCount;i++){
+      const d = document.createElement('div');
+      d.className = 'dot' + (i === currentEditIndex ? ' active' : '');
+      editorDots.appendChild(d);
+    }
+  }
+
+  function renderEditorPhoto(){
+    editorImg.src = photos[currentEditIndex];
+    selectedStickerId = null;
+    stickerTools.classList.remove('show');
+    editorPhoto.querySelectorAll('.sticker').forEach(el=>el.remove());
+    photoStickers[currentEditIndex].forEach(s => editorPhoto.appendChild(buildStickerEl(s)));
+    renderEditorDots();
+    prevPhotoBtn.disabled = currentEditIndex === 0;
+    nextPhotoBtn.textContent = currentEditIndex === shotCount - 1 ? 'Última ✔' : 'Siguiente ›';
+  }
+
+  function buildStickerEl(s){
+    const el = document.createElement('div');
+    el.className = 'sticker';
+    el.textContent = s.emoji;
+    el.dataset.id = s.id;
+    applyStickerTransform(el, s);
+
+    el.addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      selectSticker(s.id);
+      el.setPointerCapture(e.pointerId);
+      const rect = editorPhoto.getBoundingClientRect();
+
+      function onMove(ev){
+        const relX = ((ev.clientX - rect.left) / rect.width) * 100;
+        const relY = ((ev.clientY - rect.top) / rect.height) * 100;
+        s.x = Math.min(96, Math.max(4, relX));
+        s.y = Math.min(96, Math.max(4, relY));
+        applyStickerTransform(el, s);
+      }
+      function onUp(){
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+      }
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+    });
+
+    return el;
+  }
+
+  function applyStickerTransform(el, s){
+    el.style.left = s.x + '%';
+    el.style.top = s.y + '%';
+    el.style.transform = `translate(-50%, -50%) rotate(${s.rot}deg) scale(${s.scale})`;
+    el.classList.toggle('selected', s.id === selectedStickerId);
+  }
+
+  function selectSticker(id){
+    selectedStickerId = id;
+    editorPhoto.querySelectorAll('.sticker').forEach(el=>{
+      const s = photoStickers[currentEditIndex].find(st => st.id === parseInt(el.dataset.id));
+      if(s) applyStickerTransform(el, s);
+    });
+    stickerTools.classList.add('show');
+  }
+
+  editorPhoto.addEventListener('pointerdown', (e)=>{
+    if(e.target === editorPhoto || e.target === editorImg){
+      selectedStickerId = null;
+      stickerTools.classList.remove('show');
+      editorPhoto.querySelectorAll('.sticker').forEach(el=>el.classList.remove('selected'));
+    }
+  });
+
+  stickerPalette.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    const s = {
+      id: ++stickerIdSeq,
+      emoji: btn.dataset.emoji,
+      x: 50, y: 50,
+      scale: 1,
+      rot: 0
+    };
+    photoStickers[currentEditIndex].push(s);
+    editorPhoto.appendChild(buildStickerEl(s));
+    selectSticker(s.id);
+  });
+
+  function getSelectedSticker(){
+    return photoStickers[currentEditIndex].find(s => s.id === selectedStickerId);
+  }
+  function refreshSelectedEl(){
+    const el = editorPhoto.querySelector('.sticker[data-id="' + selectedStickerId + '"]');
+    const s = getSelectedSticker();
+    if(el && s) applyStickerTransform(el, s);
+  }
+
+  document.getElementById('stickerBigger').addEventListener('click', ()=>{
+    const s = getSelectedSticker(); if(!s) return;
+    s.scale = Math.min(3, s.scale + 0.15);
+    refreshSelectedEl();
+  });
+  document.getElementById('stickerSmaller').addEventListener('click', ()=>{
+    const s = getSelectedSticker(); if(!s) return;
+    s.scale = Math.max(0.3, s.scale - 0.15);
+    refreshSelectedEl();
+  });
+  document.getElementById('stickerRotate').addEventListener('click', ()=>{
+    const s = getSelectedSticker(); if(!s) return;
+    s.rot = (s.rot + 20) % 360;
+    refreshSelectedEl();
+  });
+  document.getElementById('stickerDelete').addEventListener('click', ()=>{
+    if(selectedStickerId == null) return;
+    photoStickers[currentEditIndex] = photoStickers[currentEditIndex].filter(s => s.id !== selectedStickerId);
+    const el = editorPhoto.querySelector('.sticker[data-id="' + selectedStickerId + '"]');
+    if(el) el.remove();
+    selectedStickerId = null;
+    stickerTools.classList.remove('show');
+  });
+
+  prevPhotoBtn.addEventListener('click', ()=>{
+    if(currentEditIndex > 0){ currentEditIndex--; renderEditorPhoto(); }
+  });
+  nextPhotoBtn.addEventListener('click', ()=>{
+    if(currentEditIndex < shotCount - 1){ currentEditIndex++; renderEditorPhoto(); }
+  });
+
+  finishEditBtn.addEventListener('click', async ()=>{
+    editorBox.classList.add('hidden');
+    thumbsBox.classList.remove('hidden');
+    setupBox.classList.remove('hidden');
+    statusLine.textContent = 'Componiendo tu tira...';
+    startBtn.disabled = true;
+    await composeFinalStrip();
+    statusLine.textContent = '¡Tira lista! Descárgala abajo.';
+    startBtn.disabled = false;
+    resetBtn.classList.remove('hidden');
+  });
+
+  /* ===== Final compose (bakes stickers onto each photo) ===== */
+
+  function loadImage(src){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      img.onload = ()=>resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function composePhotoWithStickers(index){
+    const canvas = document.createElement('canvas');
+    canvas.width = CAPTURE_W;
+    canvas.height = CAPTURE_H;
+    const ctx = canvas.getContext('2d');
+    const img = await loadImage(photos[index]);
+    ctx.drawImage(img, 0, 0, CAPTURE_W, CAPTURE_H);
+
+    photoStickers[index].forEach(s=>{
+      const px = (s.x / 100) * CAPTURE_W;
+      const py = (s.y / 100) * CAPTURE_H;
+      const fontSize = 40 * s.scale;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(s.rot * Math.PI / 180);
+      ctx.font = fontSize + 'px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(s.emoji, 0, 0);
+      ctx.restore();
+    });
+
+    return canvas;
+  }
+
+  async function composeFinalStrip(){
+    const pad = 24, gap = 16, footerH = 74;
+    const w = CAPTURE_W + pad*2;
+    const h = pad + (CAPTURE_H + gap) * shotCount + footerH;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#fff0fa';
+    ctx.fillRect(0, 0, w, h);
+
+    for(let i=0;i<photos.length;i++){
+      const photoCanvas = await composePhotoWithStickers(i);
+      const y = pad + i * (CAPTURE_H + gap);
+      ctx.drawImage(photoCanvas, pad, y, CAPTURE_W, CAPTURE_H);
+    }
+
+    const footerY = h - footerH;
+    ctx.fillStyle = '#b3006e';
+    ctx.font = '700 22px "Comic Sans MS", "Baloo 2", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✰ CABINA DE FOTOS ✰', w/2, footerY + 34);
+    ctx.font = '400 13px "Comic Sans MS", sans-serif';
+    ctx.fillStyle = '#8a3a6e';
+    const dateStr = new Date().toLocaleDateString('es-MX', { day:'2-digit', month:'2-digit', year:'numeric' });
+    ctx.fillText(dateStr, w/2, footerY + 56);
+
+    finalImg.src = canvas.toDataURL('image/png');
+    finalBox.classList.remove('hidden');
+    downloadBtn.onclick = ()=>{
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'tira-fotobooth-' + Date.now() + '.png';
+      a.click();
+    };
+  }
+
+  function resetSession(){
+    photos = [];
+    photoStickers = [];
+    renderThumbs();
+    editorBox.classList.add('hidden');
+    thumbsBox.classList.remove('hidden');
+    setupBox.classList.remove('hidden');
+    finalBox.classList.add('hidden');
+    resetBtn.classList.add('hidden');
+    statusLine.textContent = 'Lista para empezar';
+  }
+
+  startBtn.addEventListener('click', startSession);
+  resetBtn.addEventListener('click', resetSession);
+})();
+</script>
+
+</body>
+</html>
